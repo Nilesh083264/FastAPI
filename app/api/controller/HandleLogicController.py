@@ -1,28 +1,44 @@
-from fastapi import Request, APIRouter, Depends
+from fastapi import APIRouter, Request, HTTPException
+from fastapi.responses import JSONResponse
 from services.endpoint_extractors import CommandFactory
-from sqlalchemy.orm import Session
-from database import get_db
+from core.db_session import db_dependency
+from models import Questions, Choices
+from Schemas.Quiz_schema import ChoiceBase,QuestionBase
 router = APIRouter()
+
 
 @router.get("/")
 def hello_world():
-    return "Hello World"
-
+    return {"message": "Hello World"}
 
 @router.post("/URLS")
-async def Data_Requests (requests: Request):
+async def data_requests(requests: Request):
     try:
         data = await requests.json()
-        cmd = CommandFactory.get_command(data["Endpoint"])
+        cmd = CommandFactory.get_command(data.get("Endpoint"))
         if cmd:
-            cmd.execute(data["Payload"])
+            cmd.execute(data.get("Payload"))
+            return JSONResponse(content={"status": "success", "message": "Command executed"})
         else:
-            print("Invalid action:", data["Endpoint"])
-
+            return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid endpoint"})
     except Exception as e:
-        print(str(e))
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
 
-@router.get("/test-db")
-def test_db_connection(db: Session = Depends(get_db)):
-    result = db.execute("SELECT 1")
-    return {"status": "Connected", "result": list(result)}
+
+@router.post("/questions/")
+async def create_questions(question : QuestionBase, db:db_dependency):
+    db_question = Questions(question_txt = question.question_txt)
+    db.add(db_question)
+    db.commit()
+    db.refresh(db_question)
+    for choice in question.choice:
+        db_choice = Choices(
+            choice_txt=choice.choice_txt,
+            is_correct=choice.is_correct,
+            question_id=db_question.id
+        )
+        db.add(db_choice)
+
+    db.commit()
+    return {"message": "Question and choices created successfully"}
+
