@@ -59,3 +59,24 @@ def read_question(QID:int, db:db_dependency):
     return output
 
 
+@router.delete("/delete/{QID}")
+def delete_data(QID:int , db:db_dependency):
+    Que= db.query(Questions).filter(Questions.id == QID).all()
+    opts = db.query(Choices).filter(Choices.question_id == QID).all()
+    print(Que)
+    for i in Que:
+        db.delete(i)
+    for i in opts:
+        db.delete(i)
+    db.commit()
+    return {"message": "Item deleted successfully"}
+
+
+# Update (PUT)
+@router.put("/update/{QID}")
+async def update_item(QID: int,new_data : str,correct : bool, db:db_dependency):
+    opts = db.query(Choices).filter(Choices.question_id == QID, Choices.is_correct == correct).all()
+    for i in opts:
+        i.choice_txt = new_data
+    db.commit()
+    return {"message" : "Update Done"}
