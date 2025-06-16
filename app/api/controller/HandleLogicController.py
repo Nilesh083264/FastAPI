@@ -42,3 +42,20 @@ async def create_questions(question : QuestionBase, db:db_dependency):
     db.commit()
     return {"message": "Question and choices created successfully"}
 
+
+@router.get("/que{QID}")
+async def read_question(QID : int,db : db_dependency ):
+    print(QID)
+    question = db.query(Questions).filter(Questions.id == QID).first()
+    choices = db.query(Choices).filter(Choices.question_id == QID, Choices.is_correct == True).all()
+
+    result = {
+        "question": question,
+        "correct_choices": choices
+    }
+
+    if not result:
+        raise HTTPException(status_code=404,detail="QID not Found")
+    print(result)
+    return result
+
