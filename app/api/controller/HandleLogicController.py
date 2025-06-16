@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from services.endpoint_extractors import CommandFactory
 from core.db_session import db_dependency
 from models import Questions, Choices
+from typing import Dict
 from Schemas.Quiz_schema import ChoiceBase,QuestionBase
 router = APIRouter()
 
@@ -43,19 +44,18 @@ async def create_questions(question : QuestionBase, db:db_dependency):
     return {"message": "Question and choices created successfully"}
 
 
-@router.get("/que{QID}")
-async def read_question(QID : int,db : db_dependency ):
-    print(QID)
-    question = db.query(Questions).filter(Questions.id == QID).first()
-    choices = db.query(Choices).filter(Choices.question_id == QID, Choices.is_correct == True).all()
-
-    result = {
-        "question": question,
-        "correct_choices": choices
+@router.get("/que/{QID}")
+def read_question(QID:int, db:db_dependency):
+    Que= db.query(Questions).filter(Questions.id == QID).all()
+    opts = db.query(Choices).filter(Choices.question_id == QID).all()
+    correct_ans = db.query(Choices).filter(Choices.is_correct == True, Choices.question_id == QID).all()
+    output = {
+        "Question " : Que,
+        "Choices" : opts,
+        "Answer" : correct_ans
     }
-
-    if not result:
+    if not output:
         raise HTTPException(status_code=404,detail="QID not Found")
-    print(result)
-    return result
+    return output
+
 

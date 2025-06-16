@@ -1,7 +1,12 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
-from database import Base
+from database import Base,engine
 
+
+
+
+
+print("In models.py")
 class Questions(Base):
     __tablename__ = 'questions'
 
@@ -26,3 +31,4 @@ class Choices(Base):
 
 
 
+Base.metadata.create_all(bind=engine)
